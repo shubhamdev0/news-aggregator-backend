@@ -78,11 +78,10 @@ const searchArticles = async (query) => {
         const newsApiResponse = await axios.get('https://newsapi.org/v2/everything', {
             params: {
                 apiKey: process.env.NEWS_API_KEY,
-                country: 'us',
                 q: query.keyword,
                 from: query.date,
                 sources: query.source,
-                domains: query.source,  // Add domains parameter if source is a domain name
+                domains: query.source,
             },
         });
         articles.push(...newsApiResponse.data.articles.map(article => ({
