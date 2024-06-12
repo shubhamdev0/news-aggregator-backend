@@ -38,7 +38,7 @@ This is the backend service for the News Aggregator application. It fetches news
     npm start
     ```
 
-The backend server should now be running on `http://localhost:3000`.
+The backend server should now be running on `http://localhost:8000`.
 
 ## API Endpoints
 
