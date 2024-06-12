@@ -1,15 +1,25 @@
 const axios = require('axios');
 
+const fetchWithRetry = async (url, params, retries = 3) => {
+    try {
+        return await axios.get(url, { params });
+    } catch (error) {
+        if (retries > 0 && (error.response.status === 429 || error.response.status === 500)) {
+            await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
+            return fetchWithRetry(url, params, retries - 1);
+        }
+        throw error;
+    }
+};
+
 const fetchArticles = async (query) => {
     const articles = [];
 
     try {
-        const newsApiResponse = await axios.get('https://newsapi.org/v2/top-headlines', {
-            params: {
-                apiKey: process.env.NEWS_API_KEY,
-                country: 'us',
-                ...query,
-            },
+        const newsApiResponse = await fetchWithRetry('https://newsapi.org/v2/top-headlines', {
+            apiKey: process.env.NEWS_API_KEY,
+            country: 'us',
+            ...query,
         });
         articles.push(...newsApiResponse.data.articles.map(article => ({
             id: article.url,
@@ -26,12 +36,10 @@ const fetchArticles = async (query) => {
     }
 
     try {
-        const guardianApiResponse = await axios.get('https://content.guardianapis.com/search', {
-            params: {
-                'api-key': process.env.GUARDIAN_API_KEY,
-                'show-fields': 'trailText,thumbnail',
-                ...query,
-            },
+        const guardianApiResponse = await fetchWithRetry('https://content.guardianapis.com/search', {
+            'api-key': process.env.GUARDIAN_API_KEY,
+            'show-fields': 'trailText,thumbnail',
+            ...query,
         });
         articles.push(...guardianApiResponse.data.response.results.map(article => ({
             id: article.id,
@@ -48,11 +56,9 @@ const fetchArticles = async (query) => {
     }
 
     try {
-        const nytApiResponse = await axios.get('https://api.nytimes.com/svc/topstories/v2/home.json', {
-            params: {
-                'api-key': process.env.NYT_API_KEY,
-                ...query,
-            },
+        const nytApiResponse = await fetchWithRetry('https://api.nytimes.com/svc/topstories/v2/home.json', {
+            'api-key': process.env.NYT_API_KEY,
+            ...query,
         });
         articles.push(...nytApiResponse.data.results.map(article => ({
             id: article.url,
@@ -75,14 +81,11 @@ const searchArticles = async (query) => {
     const articles = [];
 
     try {
-        const newsApiResponse = await axios.get('https://newsapi.org/v2/everything', {
-            params: {
-                apiKey: process.env.NEWS_API_KEY,
-                q: query.keyword,
-                from: query.date,
-                sources: query.source,
-                domains: query.source,
-            },
+        const newsApiResponse = await fetchWithRetry('https://newsapi.org/v2/everything', {
+            apiKey: process.env.NEWS_API_KEY,
+            from: query.date,
+            sources: query.source,
+            domains: query.source,
         });
         articles.push(...newsApiResponse.data.articles.map(article => ({
             id: article.url,
@@ -99,14 +102,12 @@ const searchArticles = async (query) => {
     }
 
     try {
-        const guardianApiResponse = await axios.get('https://content.guardianapis.com/search', {
-            params: {
-                'api-key': process.env.GUARDIAN_API_KEY,
-                q: query.keyword,
-                'from-date': query.date,
-                section: query.category,
-                'show-fields': 'trailText,thumbnail',
-            },
+        const guardianApiResponse = await fetchWithRetry('https://content.guardianapis.com/search', {
+            'api-key': process.env.GUARDIAN_API_KEY,
+            q: query.keyword,
+            'from-date': query.date,
+            section: query.category,
+            'show-fields': 'trailText,thumbnail',
         });
         articles.push(...guardianApiResponse.data.response.results.map(article => ({
             id: article.id,
@@ -123,15 +124,13 @@ const searchArticles = async (query) => {
     }
 
     try {
-        const nytApiResponse = await axios.get('https://api.nytimes.com/svc/search/v2/articlesearch.json', {
-            params: {
-                'api-key': process.env.NYT_API_KEY,
-                q: query.keyword,
-                begin_date: query.date ? query.date.replace(/-/g, '') : undefined,
-                fq: query.category ? `section_name:("${query.category}")` : undefined,
-                'facet_fields': 'source',
-                'facet_filter': true,
-            },
+        const nytApiResponse = await fetchWithRetry('https://api.nytimes.com/svc/search/v2/articlesearch.json', {
+            'api-key': process.env.NYT_API_KEY,
+            q: query.keyword,
+            begin_date: query.date ? query.date.replace(/-/g, '') : undefined,
+            fq: query.category ? `section_name:("${query.category}")` : undefined,
+            'facet_fields': 'source',
+            'facet_filter': true,
         });
         articles.push(...nytApiResponse.data.response.docs.map(article => ({
             id: article.web_url,

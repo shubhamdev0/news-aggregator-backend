@@ -1,4 +1,3 @@
-// src/controllers/articleController.js
 const newsService = require('../services/newsService');
 
 exports.getArticles = async (req, res) => {
@@ -30,5 +29,17 @@ exports.searchArticles = async (req, res) => {
         res.status(200).json(articles);
     } catch (error) {
         res.status(500).json({ error: 'Failed to search articles' });
+    }
+};
+
+exports.getArticleOptions = async (req, res) => {
+    try {
+        const articles = await newsService.fetchArticles({});
+        const sources = [...new Set(articles.map(article => article.source))];
+        const categories = [...new Set(articles.map(article => article.category))];
+        const authors = [...new Set(articles.map(article => article.author))];
+        res.status(200).json({ sources, categories, authors });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch article options' });
     }
 };
